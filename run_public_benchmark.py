@@ -7,8 +7,6 @@ from runloop_api_client.types import ScenarioRetrieveResponse
 from runloop_api_client.types.scenario_run_view import ScenarioRunView
 from runloop_api_client.lib.polling import PollingConfig
 
-
-# Limit concurrent scenario runs to avoid overwhelming the API
 CONCURRENT_RUNS = 50
 semaphore = asyncio.Semaphore(CONCURRENT_RUNS)
 
