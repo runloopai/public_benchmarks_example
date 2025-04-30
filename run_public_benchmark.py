@@ -52,12 +52,19 @@ async def main():
     if args.benchmark_id:
         benchmark_id = args.benchmark_id        
 
+        # Step 1. We start a benchmark run which keeps track of all the scenarios that we need to run for that benchmark
+        # Benchmarks are a collection of scenarios that together test a specific set of skills. For example, the SWE-bench Verified benchmark is a collection of scenarios that test solving python problems for real world use cases.
+        # Benchmark runs are used to track the results of running an agent against a benchmark.        
         benchmark_run = await runloop.benchmarks.start_run(
             benchmark_id=benchmark_id,
         )
 
         print(f"Benchmark Run: {benchmark_run.id} {benchmark_run.name}")
 
+        # Step 2. We run each scenario in parallel
+        # A Scenario is a single problem that we want to solve. For example, a single row of the SWE-bench Verified dataset is a scenario.
+        # A Scenario is comprised of a test environment specification, a set of inputs that comprise the problem statement and context given to an agent, and a set of scorers to evaluate the quality of the solution
+        # A Scenario Run is a single run of a scenario. It is comprised of a live devbox that is used to test the solution and runs all the scorers against the solution.
         results = await asyncio.gather(
             *[
                 attempt_scenario_run_with_golden_patch(runloop, id, benchmark_run.id, args.keep_devbox)
@@ -65,6 +72,7 @@ async def main():
             ]
         )
 
+        # Step 3. We collect the results. Runloop Scorers all result in a score from 0 to 1.0
         successes = [r for r in results if r.run_completed]
         failures = [r for r in results if not r.run_completed]
 
@@ -90,6 +98,7 @@ async def main():
         if args.scenario_id:
             scenario_id = args.scenario_id
         elif args.scenario_name:
+            # We search for the public scenario by name
             scenarios = await runloop.scenarios.list_public(name=args.scenario_name)
             if len(scenarios.scenarios) == 0:
                 raise ValueError(f"Scenario with name {args.scenario_name} not found")
@@ -132,6 +141,7 @@ async def run_scenario_with_reference_solution(
     print(f"Running scenario: {scenario.id} {scenario.name}")
     print(f"View Scenario Info at: https://platform.runloop.ai/scenarios/{scenario.id}")
 
+    # Step 1. We start a scenario run which will create a devbox and prepare the environment for testing
     scenario_run = await runloop.scenarios.start_run_and_await_env_ready(
         scenario_id=scenario.id,
         benchmark_run_id=benchmark_run_id,
@@ -140,12 +150,17 @@ async def run_scenario_with_reference_solution(
 
     print(f"View Run Results at: https://platform.runloop.ai/scenarios/{scenario.id}/runs/{scenario_run.id}")
 
-    # Replace the below with your own agent code to apply a solution dynamically
+    # Step 2. We apply the reference solution to the devbox
+    # Replace the below with your own agent code to apply a solution dynamically.
+    # You can use the Devbox API to write files to the devbox and execute shell commands.
+    # See https://docs.runloop.ai/devboxes/execute-commands
+    # and https://docs.runloop.ai/devboxes/files
     # -------------------------------------------
     # Write patch to /home/user/ref.patch
     await runloop.devboxes.write_file_contents(
         id=scenario_run.devbox_id,
         file_path="/home/user/ref.patch",
+        # The reference output is the golden patch from the public SWE-bench dataset
         contents=scenario.reference_output or "",
     )
 
@@ -156,7 +171,7 @@ async def run_scenario_with_reference_solution(
     )
     # -------------------------------------------
 
-    # Score the scenario
+    # Step 3. We score the scenario. This will automatically run all scorers for the scenario against the current state of the devbox.
     result = await runloop.scenarios.runs.score_and_await(
         id=scenario_run.id,
         polling_config=PollingConfig(max_attempts=60 * 5),
@@ -167,7 +182,7 @@ async def run_scenario_with_reference_solution(
     )    
 
     if not keep_devbox:
-        # Shutdown devbox after scoring
+        # Step 4. We complete the scenario run. This will delete the devbox and clean up the environment.
         await runloop.scenarios.runs.complete(id=scenario_run.id)
     else:
         print(f"Keeping devbox {scenario_run.devbox_id} running for manual inspection")
