@@ -1,0 +1,58 @@
+# Public Benchmarks Example
+
+This repository contains a script to run public benchmarks using the Runloop API.
+
+## Setup
+
+1. Install `uv` (if not already installed):
+See: https://docs.astral.sh/uv/getting-started/installation/
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+2. Sync Dependencies:
+```bash
+uv sync
+```
+
+
+## Usage
+
+The script can be run in several ways:
+
+1. Run a specific benchmark:
+```bash
+uv run run_public_benchmark.py --benchmark-id <BENCHMARK_ID>
+```
+
+2. Run a specific scenario by ID:
+```bash
+uv run run_public_benchmark.py --scenario-id <SCENARIO_ID>
+```
+
+3. Run a specific scenario by name:
+```bash
+uv run run_public_benchmark.py --scenario-name <SCENARIO_NAME>
+```
+
+# SWE Bench Examples
+1. Run full SWE Bench Verified benchmark:
+```bash
+uv run run_public_benchmark.py --benchmark-id bmd_2zKrXc8WCUGN2V8LM4KzM
+```
+
+2. Run a specific SWE bench verified scenario by instance ID:
+See full list of scenarios at: https://huggingface.co/datasets/princeton-nlp/SWE-bench_Verified
+```bash
+uv run run_public_benchmark.py --scenario-name astropy__astropy-12907 
+```
+
+### Additional Options
+- `--keep-devbox`: Keep the devbox running after scoring for manual inspection and debugging
+- `--force-clear-running-devboxes`: Force shutdown all running devboxes before running the benchmark/scenario
+
+
+## Notes
+- The script limits concurrent scenario runs to 50 to avoid overwhelming the API
+- Results can be viewed at https://platform.runloop.pro/scenarios/{scenario_id}/runs/{run_id}
+
