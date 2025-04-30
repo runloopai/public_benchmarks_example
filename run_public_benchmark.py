@@ -130,7 +130,7 @@ async def run_scenario_with_reference_solution(
     keep_devbox: bool = False,
 ) -> ScenarioRunView:
     print(f"Running scenario: {scenario.id} {scenario.name}")
-    print(f"View Scenario Info at: https://platform.runloop.pro/scenarios/{scenario.id}")
+    print(f"View Scenario Info at: https://platform.runloop.ai/scenarios/{scenario.id}")
 
     scenario_run = await runloop.scenarios.start_run_and_await_env_ready(
         scenario_id=scenario.id,
@@ -138,7 +138,7 @@ async def run_scenario_with_reference_solution(
         polling_config=PollingConfig(max_attempts=60 * 5),
     )
 
-    print(f"View Run Results at: https://platform.runloop.pro/scenarios/{scenario.id}/runs/{scenario_run.id}")
+    print(f"View Run Results at: https://platform.runloop.ai/scenarios/{scenario.id}/runs/{scenario_run.id}")
 
     # Replace the below with your own agent code to apply a solution dynamically
     # -------------------------------------------
