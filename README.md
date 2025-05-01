@@ -44,7 +44,7 @@ uv run run_public_benchmark.py --scenario-name <SCENARIO_NAME>
 # SWE Bench Examples
 1. Run full SWE Bench Verified benchmark:
 ```bash
-uv run run_public_benchmark.py --benchmark-id bmd_2zKrXc8WCUGN2V8LM4KzM
+uv run run_public_benchmark.py --benchmark-id bmd_2zmp3Mu3LhWu7yDVIfq3m
 ```
 
 2. Run a specific SWE bench verified scenario by instance ID:
