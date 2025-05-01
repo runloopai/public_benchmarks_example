@@ -15,6 +15,12 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync
 ```
 
+3. Export your Runloop API Key
+You can get an API key from the Runloop dashboard at https://platform.runloop.ai/manage/keys
+```bash
+export RUNLOOP_API_KEY=<YOUR_API_KEY>
+```
+
 
 ## Usage
 
