@@ -53,6 +53,5 @@ uv run run_public_benchmark.py --scenario-name astropy__astropy-12907
 
 
 ## Notes
-- The script limits concurrent scenario runs to 50 to avoid overwhelming the API
-- Results can be viewed at https://platform.runloop.pro/scenarios/{scenario_id}/runs/{run_id}
+- The script limits concurrent scenario runs to 50
 
