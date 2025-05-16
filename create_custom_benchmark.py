@@ -95,7 +95,7 @@ async def create_custom_scenarios_and_benchmark():
                         "name": "script_output_is_hello",
                         "scorer": {
                             "type": "bash_script_scorer",
-                            "bash_script": '#!/bin/bash\n\noutput=$(python index.py)\n\nif [ "$output" == "Hello" ]; then\n  echo "1"\n  exit 1\nelse\n  echo "0"\n  exit 1\nfi',
+                            "bash_script": '#!/bin/bash\n\noutput=$(python index.py)\n\nif [ "$output" == "Hello" ]; then\n  echo "1.0"\n  exit 1\nelse\n  echo "0.0"\n  exit 1\nfi',
                         },
                         "weight": 1.0,
                     }
