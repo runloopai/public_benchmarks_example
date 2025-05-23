@@ -150,25 +150,39 @@ async def run_scenario_with_reference_solution(
 
     print(f"View Run Results at: https://platform.runloop.ai/scenarios/{scenario.id}/runs/{scenario_run.id}")
 
-    # Step 2. We apply the reference solution to the devbox
-    # Replace the below with your own agent code to apply a solution dynamically.
-    # You can use the Devbox API to write files to the devbox and execute shell commands.
-    # See https://docs.runloop.ai/devboxes/execute-commands
-    # and https://docs.runloop.ai/devboxes/files
-    # -------------------------------------------
-    # Write patch to /home/user/ref.patch
+    # Step 2. Run SWE agent to solve the scenario
+    # First write the problem statement to a file
     await runloop.devboxes.write_file_contents(
         id=scenario_run.devbox_id,
-        file_path="/home/user/ref.patch",
-        # The reference output is the golden patch from the public SWE-bench dataset
-        contents=scenario.reference_output or "",
+        file_path="/home/user/problem_statement.txt",
+        contents=scenario.input_context.problem_statement,
     )
 
-    # Apply patch
-    await runloop.devboxes.execute_sync(
+    prepare_swe_agent_command = await runloop.devboxes.execute_sync(
         id=scenario_run.devbox_id,
-        command="cd /testbed && patch -p1 < /home/user/ref.patch",
+        command=" git clone https://github.com/SWE-agent/SWE-agent.git && cd SWE-agent && uv venv && source .venv/bin/activate && uv pip install -e ."        
     )
+    if prepare_swe_agent_command.exit_status != 0:
+        raise Exception(f"Failed to prepare SWE agent. Exit status: {prepare_swe_agent_command.exit_status}")
+
+    OPENAI_API_KEY = "<your-openai-api-key>"
+    SWE_AGENT_COMMAND = f"""
+    cd SWE-agent && source .venv/bin/activate && export OPENAI_API_KEY={OPENAI_API_KEY} && sweagent run   \
+	--agent.model.name=gpt-4o  \
+	 --agent.model.per_instance_cost_limit=2.00 \
+	--env.repo.type=preexisting \
+	--env.repo.repo_name="testbed"  \
+	--env.deployment.type=local \
+	--agent.model.api_key=$OPENAI_API_KEY \
+	--problem_statement.path="/home/user/problem_statement.txt" \
+	--problem_statement.type=text_file
+    """
+    execution = await runloop.devboxes.execute_async(scenario_run.devbox_id, command=SWE_AGENT_COMMAND)
+    final_execution_state = await runloop.devboxes.executions.await_completed(execution_id=execution.execution_id, devbox_id=scenario_run.devbox_id, polling_config=PollingConfig(max_attempts=60 * 5))
+    print(f"Final execution state: {final_execution_state.exit_status}")
+    print(f"Final execution output: {final_execution_state.stdout}")
+    if final_execution_state.exit_status != 0:
+        raise Exception(f"SWE agent failed to run. Exit status: {final_execution_state.exit_status}")
     # -------------------------------------------
 
     # Step 3. We score the scenario. This will automatically run all scorers for the scenario against the current state of the devbox.
