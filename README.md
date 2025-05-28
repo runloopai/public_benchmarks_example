@@ -3,7 +3,13 @@
 This repository contains a script to run public benchmarks using the Runloop API.
 
 ## Setup
+Export your Runloop API Key.
+You can get an API key from the Runloop dashboard at https://platform.runloop.ai/manage/keys
+```bash
+export RUNLOOP_API_KEY=<YOUR_API_KEY>
+```
 
+### Python setup
 1. Install `uv` (if not already installed):
 See: https://docs.astral.sh/uv/getting-started/installation/
 ```bash
@@ -14,29 +20,32 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```bash
 uv sync
 ```
+### Node setup
+1. Install `Node.js` from [https://nodejs.org/en/download](https://nodejs.org/en/download) (if not already installed)
 
-3. Export your Runloop API Key
-You can get an API key from the Runloop dashboard at https://platform.runloop.ai/manage/keys
+2. Install packages via package manager
 ```bash
-export RUNLOOP_API_KEY=<YOUR_API_KEY>
+npm install # or pnpm install
 ```
-
 
 ## Usage
 
 The script can be run in several ways:
+- If using python, use the command `uv run run_public_benchmark.py`
+- If using typescript, use the command `npx tsx runPublicBenchmark.ts`
+- The README will continue with python command
 
 1. Run a specific benchmark:
 ```bash
 uv run run_public_benchmark.py --benchmark-id <BENCHMARK_ID>
 ```
 
-2. Run a specific scenario by ID:
+1. Run a specific scenario by ID:
 ```bash
 uv run run_public_benchmark.py --scenario-id <SCENARIO_ID>
 ```
 
-3. Run a specific scenario by name:
+1. Run a specific scenario by name:
 ```bash
 uv run run_public_benchmark.py --scenario-name <SCENARIO_NAME>
 ```

@@ -1,0 +1,26 @@
+{
+  "name": "public_benchmarks_example",
+  "version": "1.0.0",
+  "description": "This repository contains a script to run public benchmarks using the Runloop API.",
+  "main": "run_public_benchmarks.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/runloopai/public_benchmarks_example.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/runloopai/public_benchmarks_example/issues"
+  },
+  "homepage": "https://github.com/runloopai/public_benchmarks_example#readme",
+  "dependencies": {
+    "@runloop/api-client": "^0.30.0",
+    "yargs": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.24"
+  }
+}
