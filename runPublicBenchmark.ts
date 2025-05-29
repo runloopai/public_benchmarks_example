@@ -3,27 +3,38 @@ import { hideBin } from "yargs/helpers";
 import { Runloop } from "@runloop/api-client";
 import type { Runloop as RunloopTypes } from "@runloop/api-client";
 
+// Maximum number of scenarios to run concurrently
 const CONCURRENT_RUNS = 50;
 
+// Types from the Runloop client for strong typing
+// These types represent the structure of scenarios, scenario runs, and devboxes
+// If you want to see their full structure, check the Runloop API client types
+// (or use your IDE's "Go to Definition" feature)
 type ScenarioView = RunloopTypes.ScenarioView;
 type ScenarioRunView = RunloopTypes.ScenarioRunView;
 type DevboxView = RunloopTypes.DevboxView;
 
+// Result of attempting to run a scenario, including the scenario, the run result, and any error
 interface ScenarioRunResult {
   scenario: ScenarioView;
   run?: ScenarioRunView;
   error?: string;
 }
 
+// Helper to check if a scenario run completed successfully
 function runCompleted(result: ScenarioRunResult): boolean {
   return !!result.run && !result.error;
 }
 
+// Helper to extract the score from a scenario run result
 function score(result: ScenarioRunResult): number | undefined {
   return result.run?.scoring_contract_result?.score;
 }
 
+// Main entry point for the CLI tool
 async function main() {
+  // Parse command-line arguments using yargs
+  // Only one of benchmark-id, scenario-id, or scenario-name is required
   const argv = await yargs(hideBin(process.argv))
     .option("benchmark-id", {
       type: "string",
@@ -65,9 +76,12 @@ async function main() {
     .help()
     .parse();
 
+  // Instantiate the Runloop API client
+  // This will use your RUNLOOP_API_KEY environment variable for authentication
   const runloop = new Runloop();
 
-  // Optionally, shutdown all running devboxes
+  // Optionally, shut down all running devboxes before starting
+  // This is useful to avoid resource leaks or conflicts
   if (argv["force-clear-running-devboxes"]) {
     const devboxes = await runloop.devboxes.list({ status: "running" });
     const devboxList: DevboxView[] = [];
@@ -83,18 +97,21 @@ async function main() {
     console.log("All devboxes have been shut down.");
   }
 
+  // If a benchmark ID is provided, run all scenarios in the benchmark
   if (argv["benchmark-id"]) {
-    // Run full benchmark
+    // Start a new benchmark run, which tracks the results of running all scenarios in the benchmark
     const benchmarkId = argv["benchmark-id"] as string;
     const benchmarkRun = await runloop.benchmarks.startRun({
       benchmark_id: benchmarkId,
     });
     console.log(`Benchmark Run: ${benchmarkRun.id} ${benchmarkRun.name}`);
 
-    // Run each scenario in parallel (with concurrency limit)
+    // Run each scenario in the benchmark in parallel, with a concurrency limit
+    // This is similar to Python's asyncio.Semaphore pattern
     const pendingScenarios = benchmarkRun.pending_scenarios;
     const results: ScenarioRunResult[] = [];
     let idx = 0;
+    // Helper function to run batches of scenarios concurrently
     async function runNextBatch() {
       const batch: Promise<ScenarioRunResult>[] = [];
       for (
@@ -119,7 +136,7 @@ async function main() {
     }
     await runNextBatch();
 
-    // Collect results
+    // Collect and print results
     const successes = results.filter(runCompleted);
     const failures = results.filter((r) => !runCompleted(r));
 
@@ -144,9 +161,10 @@ async function main() {
     );
     console.log(`Failures: ${failures.length}`);
   } else {
-    // Run single scenario
+    // If a scenario ID or name is provided, run just that scenario
     let scenarioId: string | undefined = argv["scenario-id"];
     if (!scenarioId && argv["scenario-name"]) {
+      // Look up the scenario by name using the public scenario list
       const scenarios = await runloop.scenarios.listPublic({
         name: argv["scenario-name"],
       });
@@ -164,6 +182,7 @@ async function main() {
     if (!scenarioId) {
       throw new Error("No scenario ID found");
     }
+    // Run the single scenario
     const result = await attemptScenarioRunWithGoldenPatch(
       runloop,
       scenarioId,
@@ -182,6 +201,9 @@ async function main() {
   }
 }
 
+// Attempt to run a scenario using the reference (golden) patch
+// Replace the golden patch with Agent logic or other custom logic to evaluate the scenario
+// Returns a ScenarioRunResult with the scenario, run result, and any error
 async function attemptScenarioRunWithGoldenPatch(
   runloop: Runloop,
   scenarioId: string,
@@ -189,7 +211,9 @@ async function attemptScenarioRunWithGoldenPatch(
   keepDevbox: boolean = false
 ): Promise<ScenarioRunResult> {
   try {
+    // Retrieve scenario details from the API
     const scenario = await runloop.scenarios.retrieve(scenarioId);
+    // Actually run the scenario (see below)
     const run = await runScenarioWithReferenceSolution(
       runloop,
       scenario,
@@ -198,6 +222,7 @@ async function attemptScenarioRunWithGoldenPatch(
     );
     return { scenario, run };
   } catch (e: any) {
+    // If anything fails, return the error and a minimal scenario object
     return {
       scenario: {
         id: scenarioId,
@@ -211,6 +236,8 @@ async function attemptScenarioRunWithGoldenPatch(
   }
 }
 
+// Actually run a scenario using the reference patch, score it, and clean up
+// This function mirrors the core logic of the Python example
 async function runScenarioWithReferenceSolution(
   runloop: Runloop,
   scenario: ScenarioView,
@@ -222,7 +249,8 @@ async function runScenarioWithReferenceSolution(
     `View Scenario Info at: https://platform.runloop.ai/scenarios/${scenario.id}`
   );
 
-  // Step 1. Start scenario run and wait for environment
+  // Step 1. Start a scenario run and wait for the devbox environment to be ready
+  // This creates a new devbox and prepares it for testing
   const scenarioRun = await runloop.scenarios.startRunAndAwaitEnvReady({
     scenario_id: scenario.id,
     benchmark_run_id: benchmarkRunId,
@@ -231,7 +259,9 @@ async function runScenarioWithReferenceSolution(
     `View Run Results at: https://platform.runloop.ai/scenarios/${scenario.id}/runs/${scenarioRun.id}`
   );
 
-  // Step 2. Apply reference solution
+  // Step 2. Apply the reference solution (golden patch) to the devbox
+  // This writes the patch file and applies it using the 'patch' command
+  // TODO: Replace this solution with Agent logic or other custom logic to realistically evaluate the scenario
   await runloop.devboxes.writeFileContents(scenarioRun.devbox_id, {
     file_path: "/home/user/ref.patch",
     contents: scenario.reference_output || "",
@@ -240,12 +270,13 @@ async function runScenarioWithReferenceSolution(
     command: "cd /testbed && patch -p1 < /home/user/ref.patch",
   });
 
-  // Step 3. Score the scenario
+  // Step 3. Score the scenario using the Runloop scoring contract
+  // This will run all configured scorers and return the result
   const result = await runloop.scenarios.runs.scoreAndAwait(scenarioRun.id);
   const score = result.scoring_contract_result?.score;
   console.log(`Scoring result: id=${result.id} score=${score}`);
 
-  // Step 4. Optionally complete (delete devbox)
+  // Step 4. Optionally complete (delete) the devbox to clean up resources
   if (!keepDevbox) {
     await runloop.scenarios.runs.complete(scenarioRun.id);
   } else {
@@ -256,6 +287,7 @@ async function runScenarioWithReferenceSolution(
   return result;
 }
 
+// Start the CLI tool
 main().catch((err) => {
   console.error(err);
   process.exit(1);
