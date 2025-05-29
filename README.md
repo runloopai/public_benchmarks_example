@@ -40,12 +40,12 @@ The script can be run in several ways:
 uv run run_public_benchmark.py --benchmark-id <BENCHMARK_ID>
 ```
 
-1. Run a specific scenario by ID:
+2. Run a specific scenario by ID:
 ```bash
 uv run run_public_benchmark.py --scenario-id <SCENARIO_ID>
 ```
 
-1. Run a specific scenario by name:
+3. Run a specific scenario by name:
 ```bash
 uv run run_public_benchmark.py --scenario-name <SCENARIO_NAME>
 ```
