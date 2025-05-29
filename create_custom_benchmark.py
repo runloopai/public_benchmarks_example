@@ -37,6 +37,7 @@ async def create_custom_scenario(client: AsyncRunloop, scenario_config: Scenario
 
 # Toy example of creating a custom scorer
 # Custom scorers are great tools when scoring logic is a script that can be re-used across multiple scenarios
+# The return value from a scorer is a float between 0.0 and 1.0
 # In this case, this custom scorer always returns 1.0
 async def create_toy_custom_scorer(client: AsyncRunloop):
     new_scorer = await client.scenarios.scorers.create(
