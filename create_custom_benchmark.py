@@ -37,7 +37,8 @@ async def create_custom_scenario(client: AsyncRunloop, scenario_config: Scenario
 
 # Toy example of creating a custom scorer
 # Custom scorers are great tools when scoring logic is a script that can be re-used across multiple scenarios
-# In this case, we're creating a custom scorer that always returns 1.0
+# The return value from a scorer is a float between 0.0 and 1.0
+# In this case, this custom scorer always returns 1.0
 async def create_toy_custom_scorer(client: AsyncRunloop):
     new_scorer = await client.scenarios.scorers.create(
         name="aider-custom-scorer",
@@ -51,19 +52,19 @@ async def create_toy_custom_scorer(client: AsyncRunloop):
 async def create_custom_scenarios_and_benchmark():
     print("[INFO] Starting custom scenario and benchmark creation process...")
     # Step 1: Make a demo devbox environment with aider installed and make a snapshot of it to use as a scenario harness.
-    print("[INFO] Creating demo devbox environment with aider installed...")
+    print("[INFO] Creating aider-enabled devbox environment...")
     aider_devbox = await client.devboxes.create_and_await_running(
-        name="Demo Devbox",
+        name="aider-enabled Devbox",
         launch_parameters=LaunchParameters(
             launch_commands=[
                 "sudo apt-get update && sudo apt-get install  -y libsqlite3-dev",
                 "wget -qO- https://aider.chat/install.sh | sh",
-                "echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc && source ~/.bashrc",
+                "echo 'export PATH=$PATH:~/.local/bin' >> /home/user/.bashrc && source /home/user/.bashrc",
                 "git init .",
             ],
         ),
         environment_variables={
-            "COHERE_API_KEY": os.getenv("COHERE_API_KEY"),
+            "SERVICE_API_KEY": os.getenv("SERVICE_API_KEY"),
         },
         metadata={"is_template_devbox": "true"},
     )
@@ -80,6 +81,8 @@ async def create_custom_scenarios_and_benchmark():
     print(f"[INFO] Devbox with ID {aider_devbox.id} has been shut down.")
 
     # Step 2: Construct a set of scenarios
+    # Scenarios can be constructed with Snapshot ID, a Blueprint ID, or other launch parameters
+    # If none are specified, a default devbox will be used
     print("[INFO] Constructing scenario configurations...")
     scenario_inputs: List[ScenarioConfig] = [
         # Scenario with bash scorer
@@ -95,7 +98,7 @@ async def create_custom_scenarios_and_benchmark():
                         "name": "script_output_is_hello",
                         "scorer": {
                             "type": "bash_script_scorer",
-                            "bash_script": '#!/bin/bash\n\noutput=$(python index.py)\n\nif [ "$output" == "Hello" ]; then\n  echo "1"\n  exit 1\nelse\n  echo "0"\n  exit 1\nfi',
+                            "bash_script": '#!/bin/bash\n\noutput=$(python index.py)\n\nif [ "$output" == "Hello" ]; then\n  echo "1.0"\n  exit 1\nelse\n  echo "0.0"\n  exit 1\nfi',
                         },
                         "weight": 1.0,
                     }
@@ -222,6 +225,7 @@ async def create_custom_scenarios_and_benchmark():
 
     print("[INFO] All scenarios created. Creating benchmark...")
     custom_benchmark = await client.benchmarks.create(
+        # Benchmark names are unique
         name="Aider Custom Scenario Benchmark",
         scenario_ids=scenario_ids,
         is_public=False,
