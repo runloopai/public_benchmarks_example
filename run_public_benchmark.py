@@ -170,48 +170,61 @@ async def run_scenario_with_reference_solution(
         polling_config=PollingConfig(max_attempts=60 * 5),
     )
 
-    print(
-        f"View Run Results at: https://platform.runloop.ai/scenarios/{scenario.id}/runs/{scenario_run.id}"
-    )
+    try:
+        print(
+            f"View Run Results at: https://platform.runloop.ai/scenarios/{scenario.id}/runs/{scenario_run.id}"
+        )
 
-    # Step 2. We apply the reference solution to the devbox
-    # Replace the below with your own agent code to apply a solution dynamically.
-    # You can use the Devbox API to write files to the devbox and execute shell commands.
-    # See https://docs.runloop.ai/devboxes/execute-commands
-    # and https://docs.runloop.ai/devboxes/files
-    # -------------------------------------------
-    # Write patch to /home/user/ref.patch
-    await runloop.devboxes.write_file_contents(
-        id=scenario_run.devbox_id,
-        file_path="/home/user/ref.patch",
-        # The reference output is the golden patch from the public SWE-bench dataset
-        contents=scenario.reference_output or "",
-    )
+        # Step 2. We apply the reference solution to the devbox
+        # Replace the below with your own agent code to apply a solution dynamically.
+        # You can use the Devbox API to write files to the devbox and execute shell commands.
+        # See https://docs.runloop.ai/devboxes/execute-commands
+        # and https://docs.runloop.ai/devboxes/files
+        # -------------------------------------------
+        # Write patch to /home/user/ref.patch
+        await runloop.devboxes.write_file_contents(
+            id=scenario_run.devbox_id,
+            file_path="/home/user/ref.patch",
+            # The reference output is the golden patch from the public SWE-bench dataset
+            contents=scenario.reference_output or "",
+        )
 
-    # Apply patch
-    await runloop.devboxes.execute_sync(
-        id=scenario_run.devbox_id,
-        command="cd /testbed && patch -p1 < /home/user/ref.patch",
-    )
-    # -------------------------------------------
+        # Apply patch
+        await runloop.devboxes.execute_sync(
+            id=scenario_run.devbox_id,
+            command="cd /testbed && patch -p1 < /home/user/ref.patch",
+        )
+        # -------------------------------------------
 
-    # Step 3. We score the scenario. This will automatically run all scorers for the scenario against the current state of the devbox.
-    result = await runloop.scenarios.runs.score_and_await(
-        id=scenario_run.id,
-        polling_config=PollingConfig(max_attempts=60 * 5),
-    )
-    score = (
-        result.scoring_contract_result.score if result.scoring_contract_result else None
-    )
-    print(f"Scoring result: id={result.id} score={score}")
+        # Step 3. We score the scenario. This will automatically run all scorers for the scenario against the current state of the devbox.
+        result = await runloop.scenarios.runs.score_and_await(
+            id=scenario_run.id,
+            polling_config=PollingConfig(max_attempts=60 * 5),
+        )
+        score = (
+            result.scoring_contract_result.score
+            if result.scoring_contract_result
+            else None
+        )
+        print(f"Scoring result: id={result.id} score={score}")
 
-    if not keep_devbox:
-        # Step 4. We complete the scenario run. This will delete the devbox and clean up the environment.
-        await runloop.scenarios.runs.complete(id=scenario_run.id)
-    else:
-        print(f"Keeping devbox {scenario_run.devbox_id} running for manual inspection")
+        if not keep_devbox:
+            # Step 4. We complete the scenario run. This will delete the devbox and clean up the environment.
+            await runloop.scenarios.runs.complete(id=scenario_run.id)
+        else:
+            print(
+                f"Keeping devbox {scenario_run.devbox_id} running for manual inspection"
+            )
 
-    return result
+        return result
+    except Exception as e:
+        print(f"Error running scenario: {e}")
+
+        # Ensure we clean up the devbox on error
+        if not keep_devbox:
+            await runloop.devboxes.shutdown(id=scenario_run.devbox_id)
+
+        raise e
 
 
 if __name__ == "__main__":
