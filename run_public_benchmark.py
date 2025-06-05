@@ -3,7 +3,7 @@ import argparse
 from dataclasses import dataclass
 from typing import Optional
 from runloop_api_client import AsyncRunloop
-from runloop_api_client.types import ScenarioRetrieveResponse
+from runloop_api_client.types import ScenarioView
 from runloop_api_client.types.scenario_run_view import ScenarioRunView
 from runloop_api_client.lib.polling import PollingConfig
 
@@ -13,7 +13,7 @@ semaphore = asyncio.Semaphore(CONCURRENT_RUNS)
 
 @dataclass
 class ScenarioRunResult:
-    scenario: ScenarioRetrieveResponse
+    scenario: ScenarioView
     run: Optional[ScenarioRunView] = None
     error: Optional[str] = None
 
@@ -71,6 +71,9 @@ async def main():
         # Step 1. We start a benchmark run which keeps track of all the scenarios that we need to run for that benchmark
         # Benchmarks are a collection of scenarios that together test a specific set of skills. For example, the SWE-bench Verified benchmark is a collection of scenarios that test solving python problems for real world use cases.
         # Benchmark runs are used to track the results of running an agent against a benchmark.
+
+        benchmark = await runloop.benchmarks.retrieve(benchmark_id)
+
         benchmark_run = await runloop.benchmarks.start_run(
             benchmark_id=benchmark_id,
         )
@@ -86,7 +89,7 @@ async def main():
                 attempt_scenario_run_with_golden_patch(
                     runloop, id, benchmark_run.id, args.keep_devbox
                 )
-                for id in benchmark_run.pending_scenarios
+                for id in benchmark.scenario_ids
             ]
         )
 
@@ -153,7 +156,7 @@ async def attempt_scenario_run_with_golden_patch(
 
 async def run_scenario_with_reference_solution(
     runloop: AsyncRunloop,
-    scenario: ScenarioRetrieveResponse,
+    scenario: ScenarioView,
     benchmark_run_id: str | None,
     keep_devbox: bool = False,
 ) -> ScenarioRunView:
