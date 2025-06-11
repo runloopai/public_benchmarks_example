@@ -98,7 +98,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "runloop-api-client", specifier = ">=0.39.0" }]
+requires-dist = [{ name = "runloop-api-client", specifier = ">=0.40.0" }]
 
 [[package]]
 name = "pydantic"
@@ -159,7 +159,7 @@ wheels = [
 
 [[package]]
 name = "runloop-api-client"
-version = "0.39.0"
+version = "0.42.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -169,9 +169,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/03/69/b44abf448b0b3c0ac293525d6b9df3874cade19e975af3db5f89d76f4ab0/runloop_api_client-0.39.0.tar.gz", hash = "sha256:dfad1dd189d281f86ac858ef13daf01e458f877b9e5d0e3cafeb8c04507cc71a", size = 203582 }
+sdist = { url = "https://files.pythonhosted.org/packages/df/d5/886d477db195fe506ae4741079862f0d5ac824fef45de85b7e95d95f3bfe/runloop_api_client-0.42.0.tar.gz", hash = "sha256:cc6f4137e39b5fa1f114d742ef33e32cc83c7bc4f16193c897d44e97bcfdc6ca", size = 206620 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6f/6a/565bfb882fb1dd0500324655c5e5594c1a304367d5722ff4f92375e9ecde/runloop_api_client-0.39.0-py3-none-any.whl", hash = "sha256:afdeba4c9a66fc282885f0c1a1979587baa1710612892d605e9121a8172dc18f", size = 219765 },
+    { url = "https://files.pythonhosted.org/packages/37/23/8f7b1efd0f057cc37959eccfa863aed0bc0c0e4e74d9f1ec9ed87e9c5e69/runloop_api_client-0.42.0-py3-none-any.whl", hash = "sha256:3e66f00a078311d716df6bbd49318d43ccce013f62f63b80ef3b7d766d3d50fd", size = 225030 },
 ]
 
 [[package]]
