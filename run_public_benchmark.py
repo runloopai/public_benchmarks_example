@@ -9,6 +9,11 @@ from runloop_api_client.lib.polling import PollingConfig
 
 CONCURRENT_RUNS = 50
 semaphore = asyncio.Semaphore(CONCURRENT_RUNS)
+POLLING_INTERVAL_SECONDS = 5
+# 10 minutes
+DEVBOX_MAX_ATTEMPTS = int(60 * 10 / POLLING_INTERVAL_SECONDS)
+# 30 minutes
+SCORING_MAX_ATTEMPTS = int(60 * 15 / POLLING_INTERVAL_SECONDS)
 
 
 @dataclass
@@ -93,7 +98,13 @@ async def main():
             ]
         )
 
+        await runloop.benchmarks.runs.complete(id=benchmark_run.id)
+
         # Step 3. We collect the results. Runloop Scorers all result in a score from 0 to 1.0
+
+        # Filter out None results
+        results = [r for r in results if r is not None]
+
         successes = [r for r in results if r.run_completed]
         failures = [r for r in results if not r.run_completed]
 
@@ -129,6 +140,8 @@ async def main():
         result = await attempt_scenario_run_with_golden_patch(
             runloop, scenario_id, None, args.keep_devbox
         )
+        if result is None:
+            return None
         if not result.run_completed:
             print(f"Error running scenario: {result.error}")
         else:
@@ -142,16 +155,23 @@ async def attempt_scenario_run_with_golden_patch(
     scenario_id: str,
     benchmark_run_id: str | None,
     keep_devbox: bool = False,
-) -> ScenarioRunResult:
-    scenario = await runloop.scenarios.retrieve(scenario_id)
-    try:
-        async with semaphore:
+) -> ScenarioRunResult | None:
+    async with semaphore:
+        scenario: ScenarioView | None = None
+        try:
+            scenario = await runloop.scenarios.retrieve(scenario_id)
+        except Exception as e:
+            print(f"Error retrieving scenario: {e}")
+            return None
+
+        try:
+            # We run the scenario with the reference solution
             run = await run_scenario_with_reference_solution(
                 runloop, scenario, benchmark_run_id, keep_devbox
             )
             return ScenarioRunResult(scenario=scenario, run=run)
-    except Exception as e:
-        return ScenarioRunResult(scenario=scenario, error=str(e))
+        except Exception as e:
+            return ScenarioRunResult(scenario=scenario, error=str(e))
 
 
 async def run_scenario_with_reference_solution(
@@ -167,7 +187,10 @@ async def run_scenario_with_reference_solution(
     scenario_run = await runloop.scenarios.start_run_and_await_env_ready(
         scenario_id=scenario.id,
         benchmark_run_id=benchmark_run_id,
-        polling_config=PollingConfig(max_attempts=60 * 5),
+        polling_config=PollingConfig(
+            max_attempts=DEVBOX_MAX_ATTEMPTS,
+            interval_seconds=POLLING_INTERVAL_SECONDS,
+        ),
     )
 
     try:
@@ -199,7 +222,10 @@ async def run_scenario_with_reference_solution(
         # Step 3. We score the scenario. This will automatically run all scorers for the scenario against the current state of the devbox.
         result = await runloop.scenarios.runs.score_and_await(
             id=scenario_run.id,
-            polling_config=PollingConfig(max_attempts=60 * 5),
+            polling_config=PollingConfig(
+                max_attempts=SCORING_MAX_ATTEMPTS,
+                interval_seconds=POLLING_INTERVAL_SECONDS,
+            ),
         )
         score = (
             result.scoring_contract_result.score
