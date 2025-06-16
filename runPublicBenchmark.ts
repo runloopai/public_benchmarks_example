@@ -266,8 +266,21 @@ async function runScenarioWithReferenceSolution(
     file_path: "/home/user/ref.patch",
     contents: scenario.reference_output || "",
   });
+
+  // Apply the patch "in reverse" if the scenario was created by breaking known good code rather than to fix a bug
+  // You can also see if this tag is present in the UI for the scenario, as well as by querying for it.
+
+  let patchApplyFlags = "-p1";
+  if (
+    scenario.metadata &&
+    scenario.metadata["reference_patch_direction"] &&
+    scenario.metadata["reference_patch_direction"].toLowerCase() === "reverse"
+  ) {
+    patchApplyFlags = "-p1 -R";
+  }
+
   await runloop.devboxes.executeSync(scenarioRun.devbox_id, {
-    command: "cd /testbed && patch -p1 < /home/user/ref.patch",
+    command: `cd /testbed && patch ${patchApplyFlags} < /home/user/ref.patch`,
   });
 
   // Step 3. Score the scenario using the Runloop scoring contract

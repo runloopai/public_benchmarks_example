@@ -33,7 +33,9 @@ npm install # or pnpm install
 The script can be run in several ways:
 - If using python, use the command `uv run run_public_benchmark.py`
 - If using typescript, use the command `npx tsx runPublicBenchmark.ts`
-- The README will continue with python command
+- You can also use `npm run test` to see an example of running a test on a single scenario by ID.
+
+The README will continue with python command
 
 1. Run a specific benchmark:
 ```bash
