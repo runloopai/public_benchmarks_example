@@ -4,7 +4,7 @@
   "description": "This repository contains a script to run public benchmarks using the Runloop API.",
   "main": "run_public_benchmarks.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsx runPublicBenchmark.ts --scenario-id scn_306hiBPDhrZ9Hc8OjqFBL"
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,7 @@
     "yargs": "^18.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.15.24"
+    "@types/node": "^22.15.24",
+    "tsx": "^4.20.3"
   }
 }

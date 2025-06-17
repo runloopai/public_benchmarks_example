@@ -212,10 +212,22 @@ async def run_scenario_with_reference_solution(
             contents=scenario.reference_output or "",
         )
 
+        # Apply the patch "in reverse" if the scenario was created by breaking known good code rather than to fix a bug
+        # You can also see if this tag is present in the UI for the scenario, as well as by querying for it.
+        if (
+            scenario.metadata
+            and scenario.metadata.get("reference_patch_direction")
+            and scenario.metadata.get("reference_patch_direction", "").lower()
+            == "reverse"
+        ):
+            patch_apply_flags = "-p1 -R"
+        else:
+            patch_apply_flags = "-p1"
+
         # Apply patch
         await runloop.devboxes.execute_sync(
             id=scenario_run.devbox_id,
-            command="cd /testbed && patch -p1 < /home/user/ref.patch",
+            command=f"cd /testbed && patch {patch_apply_flags} < /home/user/ref.patch",
         )
         # -------------------------------------------
 
