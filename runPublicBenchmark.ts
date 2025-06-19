@@ -101,14 +101,14 @@ async function main() {
   if (argv["benchmark-id"]) {
     // Start a new benchmark run, which tracks the results of running all scenarios in the benchmark
     const benchmarkId = argv["benchmark-id"] as string;
+    const benchmark = await runloop.benchmarks.retrieve(benchmarkId);
     const benchmarkRun = await runloop.benchmarks.startRun({
       benchmark_id: benchmarkId,
     });
-    console.log(`Benchmark Run: ${benchmarkRun.id} ${benchmarkRun.name}`);
+
+    const pendingScenarios = benchmark.scenarioIds;
 
     // Run each scenario in the benchmark in parallel, with a concurrency limit
-    // This is similar to Python's asyncio.Semaphore pattern
-    const pendingScenarios = benchmarkRun.pending_scenarios;
     const results: ScenarioRunResult[] = [];
     let idx = 0;
     // Helper function to run batches of scenarios concurrently
