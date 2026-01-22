@@ -98,7 +98,7 @@ async def main():
             ]
         )
 
-        await runloop.benchmarks.runs.complete(id=benchmark_run.id)
+        await runloop.benchmark_runs.complete(id=benchmark_run.id)
 
         # Step 3. We collect the results. Runloop Scorers all result in a score from 0 to 1.0
 
@@ -225,8 +225,8 @@ async def run_scenario_with_reference_solution(
             patch_apply_flags = "-p1"
 
         # Apply patch
-        await runloop.devboxes.execute_sync(
-            id=scenario_run.devbox_id,
+        await runloop.devboxes.execute_and_await_completion(
+            devbox_id=scenario_run.devbox_id,
             command=f"cd /testbed && patch {patch_apply_flags} < /home/user/ref.patch",
         )
         # -------------------------------------------
